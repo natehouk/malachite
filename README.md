@@ -52,7 +52,7 @@ xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/*/Malachite*
 ## Features
 
 **The sound**
-- One band-limited oscillator: **saw** or **square**, with tuning of ±12 semitones.
+- One band-limited oscillator: **saw** or **square**, with tuning of ±12 semitones. The oscillator and filter run at twice the sample rate, with anti-aliased saturation, so high notes stay clean.
 - A resonant **4-pole low-pass filter** that squelches hard but never self-oscillates, with Cutoff, Resonance, Env Mod and Decay (0.2-2.5 s).
 - A fixed amp envelope: quick attack, long fade while the note is held.
 - **Accent:** louder, with a stronger, snappier filter sweep. Back-to-back accents charge up and ramp the filter, more so with high resonance.
@@ -120,7 +120,7 @@ g++ -O2 -std=c++11 presets.cpp -o presets && ./presets      # every sound preset
 g++ -O3 -std=c++11 bench.cpp -o bench && ./bench            # CPU
 ```
 
-Malachite takes about 0.4% of one CPU core.
+Malachite takes about 0.9% of one CPU core.
 
 Release checks:
 - Steinberg's VST3 validator passes 47/47.

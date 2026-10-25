@@ -20,6 +20,7 @@ public:
     MalachitePlugin() : Plugin(kParamCount, kNumPresets, 3) {
         for (int& m : ccMap) m = -1;
         engine.setSampleRate((float)getSampleRate());
+        setLatency(Engine::latency());
         patternText = serializePatterns(engine.pats);
     }
 
@@ -101,7 +102,7 @@ protected:
     }
     void setParameterValue(uint32_t i, float v) override { if (!(paramDef(i).hints & kHintOutput)) engine.p[i] = v; }
 
-    void activate() override { engine.setSampleRate((float)getSampleRate()); }
+    void activate() override { engine.setSampleRate((float)getSampleRate()); setLatency(Engine::latency()); }
     void sampleRateChanged(double sr) override { engine.setSampleRate((float)sr); }
 
     void run(const float**, float** outputs, uint32_t frames, const MidiEvent* ev, uint32_t evCount) override {
