@@ -3,9 +3,13 @@
 // saturating input and a high-passed resonance path, so it squelches without self-oscillating) -> VCA.
 // A fixed amp envelope, a filter envelope with decay and depth, accent (louder, shorter and stronger filter sweep,
 // with a charge that builds up over consecutive accents) and a fixed-time slide.
-// Clean-room implementation from public, generic techniques (polyBLEP oscillators, Zavalishin TPT ladder). No
+// The oscillator and ladder run at 2x the sample rate, and the ladder's saturation uses first-order antiderivative
+// anti-aliasing (ADAA), which keeps the saturation's harmonics from folding back into the audible range.
+// Clean-room implementation from public, generic techniques (polyBLEP oscillators, Zavalishin TPT ladder,
+// halfband oversampling, ADAA after Parker, Zavalishin and Le Bivic, DAFx 2016). No
 // third-party product code, assets, firmware or disassembly were used. License: MIT (see LICENSE).
 #pragma once
+#include "common/Halfband.hpp"
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -117,10 +121,12 @@ public:
         std::fill(scope, scope + kScope, 0.f);
         setSampleRate(48000.f);
     }
+    static constexpr int kOs = 2;                                         // oscillator + filter oversampling
+    static int latency() { return epsilon::Oversampler::latency(kOs) / 2; } // only the down-sampler adds delay
     void setSampleRate(float sr) { fs = std::max(8000.f, sr); reset(); }
     void reset() {
         phase = 0; pitch = curNote = 36; ampEnv = 0; attacking = false; filtEnv = 0; accCap = 0; accentOn = false;
-        std::memset(z, 0, sizeof z); hpZ = 0; dcY = 0; gate = false; held = 0; midiNote = -1;
+        std::memset(z, 0, sizeof z); os.reset(); uPrev = 0; hpZ = 0; dcY = 0; gate = false; held = 0; midiNote = -1;
         ppqFree = 0; lastStep = -1; gateOffAt = -1; transpose = 0; running = false; lastSlide = false;
         mLevel = 0; stepNow.store(-1); patNow.store(-1);
         sCut = p[kCutoff] / 100.f; sRes = p[kResonance] / 100.f; sEnv = p[kEnvMod] / 100.f; sVol = volGain();
@@ -188,7 +194,7 @@ public:
         const float kSm = 1.f - std::exp(-1.f / (0.01f * fs));
         const bool square = p[kWave] > 0.5f;
         const float tune = clampf(p[kTune], -12.f, 12.f);
-        const float hpK = 1.f - std::exp(-2.f * kPi * 120.f / fs);       // resonance path high-pass
+        const float hpK = 1.f - std::exp(-2.f * kPi * 120.f / (fs * kOs)); // resonance path high-pass (oversampled rate)
         const float dcK = 1.f - std::exp(-2.f * kPi * 25.f / fs);
         uint32_t sw = scopeWrite.load(std::memory_order_relaxed);
         const float meterFall = std::exp(-1.f / (0.3f * fs));
@@ -208,11 +214,13 @@ public:
             pitch += (curNote - pitch) * glide;
             const float hz = 440.f * std::exp2((pitch + tune - 69.f) / 12.f);
             const float dt = std::min(0.45f, hz / fs);
-            // oscillator
-            phase += dt; if (phase >= 1.f) phase -= 1.f;
-            float osc;
-            if (!square) osc = 2.f * phase - 1.f - blep(phase, dt);
-            else { float ph2 = phase + 0.5f; if (ph2 >= 1.f) ph2 -= 1.f; osc = (phase < 0.5f ? 1.f : -1.f) + blep(phase, dt) - blep(ph2, dt); osc *= 0.85f; }
+            // oscillator, at kOs times the sample rate
+            float osc[kOs]; const float dto = dt / kOs;
+            for (int j = 0; j < kOs; ++j) {
+                phase += dto; if (phase >= 1.f) phase -= 1.f;
+                if (!square) osc[j] = 2.f * phase - 1.f - blep(phase, dto);
+                else { float ph2 = phase + 0.5f; if (ph2 >= 1.f) ph2 -= 1.f; osc[j] = ((phase < 0.5f ? 1.f : -1.f) + blep(phase, dto) - blep(ph2, dto)) * 0.85f; }
+            }
             // envelopes
             filtEnv *= accentOn ? fDecayAcc : fDecay;
             if (gate) {
@@ -224,7 +232,8 @@ public:
             const float oct = sEnv * filtEnv * 4.2f + acc * accCap * 3.f;
             const float fc = clampf(28.f * std::exp2(sCut * 7.4f + oct), 20.f, 0.42f * fs);
             const float k = 3.75f * std::pow(sRes, 0.8f);
-            float y = ladder(osc * 0.9f, fc, k, hpK);
+            for (int j = 0; j < kOs; ++j) osc[j] = ladder(osc[j] * 0.9f, fc, k, hpK, fs * kOs);
+            float y = os.down(osc, kOs);
             // VCA, output
             const float vel = 1.f + (accentOn ? acc * 0.9f : 0.f);
             float out = y * ampEnv * vel * sVol;
@@ -244,6 +253,8 @@ public:
 
 private:
     float volGain() const { const float v = clampf(p[kVolume], 0.f, 100.f) / 100.f; return v * v * 2.0f; }
+    // antiderivative of tanh(1.4x) / 1.4, i.e. ln(cosh(1.4x)) / 1.96, in a form that does not overflow
+    static float satAD(float x) { const float a = std::fabs(1.4f * x); return (a + std::log1p(std::exp(-2.f * a)) - 0.69314718f) / 1.96f; }
     static float blep(float t, float dt) {
         if (t < dt) { t /= dt; return t + t - t * t - 1.f; }
         if (t > 1.f - dt) { t = (t - 1.f) / dt; return t * t + t + t + 1.f; }
@@ -251,12 +262,16 @@ private:
     }
     // zero-delay-feedback 4-pole ladder (Zavalishin's TPT form). The resonance feedback is high-passed (the low end
     // stays when resonance is up), and the input to the ladder is soft-saturated.
-    float ladder(float x, float fc, float k, float hpK) {
-        const float g = std::tan(kPi * fc / fs), G = g / (1.f + g), B = 1.f / (1.f + g);
+    float ladder(float x, float fc, float k, float hpK, float fsl) {
+        const float g = std::tan(kPi * fc / fsl), G = g / (1.f + g), B = 1.f / (1.f + g);
         const float G2 = G * G, G3 = G2 * G, G4 = G2 * G2;
         const float S = G3 * B * z[0] + G2 * B * z[1] + G * B * z[2] + B * z[3];   // y4 = G4 * u + S
         float u = (x - k * (S - hpZ)) / (1.f + k * G4);
-        u = std::tanh(1.4f * u) / 1.4f;
+        {   // u = tanh(1.4u) / 1.4, with first-order ADAA: the mean of the curve between this input and the last
+            const float d = u - uPrev;
+            const float s = std::fabs(d) > 1e-4f ? (satAD(u) - satAD(uPrev)) / d : std::tanh(0.7f * (u + uPrev)) / 1.4f;
+            uPrev = u; u = s;
+        }
         float v = u;
         for (int i = 0; i < 4; ++i) { const float w = (v - z[i]) * G, o = w + z[i]; z[i] = o + w; v = o; }
         hpZ += (v - hpZ) * hpK;
@@ -299,6 +314,7 @@ private:
     }
 
     float fs = 48000.f;
+    epsilon::Oversampler os; float uPrev = 0;
     float phase = 0, pitch = 36, curNote = 36, ampEnv = 0, filtEnv = 0, accCap = 0;
     bool accentOn = false, gate = false, lastSlide = false, attacking = false;
     float z[4] = {}, hpZ = 0, dcY = 0;

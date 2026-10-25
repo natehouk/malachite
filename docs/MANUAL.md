@@ -230,4 +230,4 @@ The patterns themselves are saved as part of the plugin's state. Malachite also 
 - **No sound when I press play.** SEQUENCER must be HOST (or FREE), and the DAW must send its transport to plugins. Check VOLUME, and that the pattern has NOTE steps.
 - **MIDI notes don't play the synth.** With the sequencer on, MIDI notes transpose the pattern; set SEQUENCER to OFF to play it directly. Check that the MIDI button is on.
 - **The line plays a different pitch.** A MIDI note may have transposed it: play C3 to return to the written pitch, or stop and restart the sequencer.
-- **Latency:** Malachite has none.
+- **Latency:** 16 samples (0.33 ms at 48 kHz), from running the oscillator and filter at twice the sample rate. Malachite reports it, so the DAW compensates automatically.
