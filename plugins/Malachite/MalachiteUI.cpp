@@ -271,7 +271,7 @@ protected:
         for (int k = 0; k < 4; ++k) { beginPath(); ellipse(cx + 3, cy + 2, 13.5f - k * 3.2f, 10.5f - k * 2.6f); strokeColor(withAlpha(C_ACC, 0.55f + 0.1f * k)); strokeWidth(1.4f); stroke(); }
         fontSize(21); textLetterSpacing(4.5f); fillColor(C_TEXT); textAlign(ALIGN_LEFT | ALIGN_MIDDLE); text(60, 34, "MALACHITE", nullptr);
         fontSize(9.5f); textLetterSpacing(2.5f); fillColor(C_DIM); text(222, 29, "ACID BASS", nullptr);
-        fontSize(7); textLetterSpacing(1.1f); fillColor(C_FAINT); text(222, 41, "EPSILON AUDIO 1.0", nullptr);
+        fontSize(7); textLetterSpacing(1.1f); fillColor(C_FAINT); text(222, 41, "EPSILON AUDIO 1.1", nullptr);
         drawPresetBar();
         for (int k = 0; k < 2; ++k) {
             const float x = A_X + k * AB_W; const bool on = abSlot == k, hot = hoverHeader == 6 + k;

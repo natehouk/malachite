@@ -1,4 +1,4 @@
-# Malachite 1.0 — User Manual
+# Malachite 1.1 — User Manual
 
 Malachite is a monophonic acid bass synthesizer with a built-in step sequencer. One oscillator goes through a squelchy resonant filter. Accents and slides give a line its bite and glide, and 64 patterns play in time with your DAW. Typical uses:
 
