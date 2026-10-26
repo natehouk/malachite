@@ -38,6 +38,9 @@ hr { display:none; }
 </style>
 </head>
 <body>
+<header id="title-block-header">
+<h1 class="title">Malachite Manual</h1>
+</header>
 <h1 id="malachite-1.0-user-manual">Malachite 1.0 — User Manual</h1>
 <p>Malachite is a monophonic acid bass synthesizer with a built-in step
 sequencer. One oscillator goes through a squelchy resonant filter.
@@ -380,6 +383,12 @@ these folders:
 <li>To delete one of your presets, right-click it in the browser and
 click again to confirm.</li>
 </ul>
+<p><strong>Search and favourites.</strong> With the browser open, just
+type to narrow the list to presets whose name or category matches;
+Backspace edits, Esc clears the search and then closes the browser.
+Click the star at the right of a preset to add it to the FAVOURITES
+column, and again to remove it. Favourites are kept in
+<code>favourites.txt</code> in your presets folder.</p>
 <hr />
 <h2 id="help-and-hover-tips">12. Help and hover tips</h2>
 <ul>
@@ -438,7 +447,9 @@ directly. Check that the MIDI button is on.</li>
 <li><strong>The line plays a different pitch.</strong> A MIDI note may
 have transposed it: play C3 to return to the written pitch, or stop and
 restart the sequencer.</li>
-<li><strong>Latency:</strong> 16 samples (0.33 ms at 48 kHz), from running the oscillator and filter at twice the sample rate. Malachite reports it, so the DAW compensates automatically.</li>
+<li><strong>Latency:</strong> 16 samples (0.33 ms at 48 kHz), from
+running the oscillator and filter at twice the sample rate. Malachite
+reports it, so the DAW compensates automatically.</li>
 </ul>
 </body>
 </html>

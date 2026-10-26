@@ -74,6 +74,7 @@ xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/*/Malachite*
 - Smoothed, sample-accurate automation.
 - Resizable interface.
 - **22 factory sound presets** in four categories, plus user presets. Presets change the sound only, never your patterns.
+- The preset browser **searches** names and categories as you type, and a star keeps a preset in **Favourites**.
 - **Hover tips** everywhere, a **HELP window**, and a **[full manual](docs/MANUAL.md)** (also in every release zip as `Malachite-Manual.html`).
 
 ![Help](screenshot-help.png)

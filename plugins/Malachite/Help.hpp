@@ -45,7 +45,7 @@ inline const char* targetTip(int t) {
     case kTipA: case kTipB: return "Malachite keeps two complete settings, A and B, including the patterns. Click the other letter to switch and compare.";
     case kTipCopy: return "Copies the current setting to the other slot.";
     case kTipPrev: return "Load the previous sound preset. The mouse wheel over the preset name also steps through presets. Presets change the sound only, never your patterns.";
-    case kTipPresets: return "Open the preset browser. A * after the name means you have changed the sound.";
+    case kTipPresets: return "Open the preset browser. A * after the name means you have changed the sound. In the browser, type to search names and categories, and click a star to keep a preset in Favourites.";
     case kTipNext: return "Load the next sound preset.";
     case kTipRoll: return "Click a cell to set that step's note (C to C). Drag up and down to change it. Right-click a step to make it a rest. Steps past the pattern length are greyed out.";
     case kTipOct: return "Click to move a step an octave up, down, or back to the middle. Octave jumps with slides are the heart of acid lines.";

@@ -191,6 +191,8 @@ Presets change the **sound only**: the sequencer settings and your patterns stay
   - Linux: `~/.config/epsilon-audio/malachite/presets`
 - To delete one of your presets, right-click it in the browser and click again to confirm.
 
+**Search and favourites.** With the browser open, just type to narrow the list to presets whose name or category matches; Backspace edits, Esc clears the search and then closes the browser. Click the star at the right of a preset to add it to the FAVOURITES column, and again to remove it. Favourites are kept in `favourites.txt` in your presets folder.
+
 ---
 
 ## 12. Help and hover tips
